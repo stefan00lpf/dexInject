@@ -1,0 +1,9 @@
+{
+    "config" :[
+    	{
+    		"packageName":"stefan.myhookdemo", 
+    		"libName" : "libmyhook"
+    	}
+    ]
+    		
+}
