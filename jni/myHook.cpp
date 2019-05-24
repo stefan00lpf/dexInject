@@ -10,6 +10,7 @@
 #include "hook.h"
 #include "hookzz.h"
 #include <iostream>
+#include <string>
 
 typedef JNIEnv* (*JNIFUN)(void); 
 
@@ -82,8 +83,16 @@ __attribute__((constructor)) void entry()
 {
 
     pid_t pid = getpid();
-    LOGI("kkk hook is start:%x", pid);
 
+    void* handle = dlopen("/system/lib/libandroid_runtime.so", RTLD_NOW);
+    getJNIEnv = (JNIFUN)dlsym(handle, "_ZN7android14AndroidRuntime9getJNIEnvEv");
+
+    JNIEnv* env = getJNIEnv();
+    std::string appName = hookNative::getPackageName(env);
+
+    LOGI("kkk appName:%s", appName.c_str());
+
+    dlclose(handle);
     //注入Dex
     doJavaInject();
 
