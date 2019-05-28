@@ -11,6 +11,7 @@
 #include "hookzz.h"
 #include <iostream>
 #include <string>
+#include <substrate.h>
 
 typedef JNIEnv* (*JNIFUN)(void); 
 
@@ -54,8 +55,55 @@ void doJavaInject()
     return;
 }
 
-// void doNativeInject()
-// {
+// extern "C"
+// JNIEXPORT void JNICALL
+// Java_kkk_hookobject_MainActivity_callnative(JNIEnv  *env, jclass jobj) {
+//   /*分配一个对java象*/
+//     LOGI("kkk Java_kkk_hookobject_MainActivity_callnative");
+//     // jclass _class = env->FindClass("stefan/myhookdemo/MainActivity");    
+//     // if(_class == NULL)
+//     // {
+//     //     LOGI("kkk can't find class");
+//     //     return;
+//     // }
+//     // jmethodID method = env->GetMethodID(_class, "onClick", "(Landroid.view.View)V");
+//     // if(method == NULL)
+//     // {
+//     //     LOGI("kkk can't find method");
+//     //     return;
+//     // }
+//     return;
+// }
+
+static void (*oldCode)(JNIEnv *, jobject);
+static void newCode(JNIEnv *jni, jobject this_1){
+    LOGI("hook 成功");
+    // (*oldCode)(jni, this_1);
+}
+
+void doJavaHook(JNIEnv* env)
+{
+    /*1.通过java反射找到目标方法*/
+    jclass _class = env->FindClass("kkk/hookobject/MainActivity");
+    if(_class == NULL)
+    {
+        LOGI("kkk can't find class");
+        return;
+    }
+    jmethodID method = env->GetMethodID(_class, "viewlog", "()V");
+    if(method == NULL)
+    {
+        LOGI("kkk can't find method");
+        return;
+    }
+    /*2.进行hook*/
+    MSJavaHookMethod(env, _class, method, (void *)&newCode, (void **)&oldCode);
+    
+    return;
+}
+
+void doNativeInject()
+{
 //     void* handler = new char;
 //     char* err = new char;
 
@@ -77,7 +125,7 @@ void doJavaInject()
 //     {
         
 //     }
-// }
+}
 
 __attribute__((constructor)) void entry()
 {
@@ -86,16 +134,75 @@ __attribute__((constructor)) void entry()
 
     void* handle = dlopen("/system/lib/libandroid_runtime.so", RTLD_NOW);
     getJNIEnv = (JNIFUN)dlsym(handle, "_ZN7android14AndroidRuntime9getJNIEnvEv");
-
     JNIEnv* env = getJNIEnv();
     std::string appName = hookNative::getPackageName(env);
 
     LOGI("kkk appName:%s", appName.c_str());
 
-    dlclose(handle);
-    //注入Dex
-    doJavaInject();
+    /*注入Dex*/
+    //doJavaInject();
 
     //注入native
     // doNativeInject();
+}
+
+// 编写函数执行
+void setSpeedLevel(JNIEnv *env, jclass obj) {
+    LOGI("kkk setSpeedLevel");
+
+    /*1.通过java反射找到目标方法*/
+    // jclass _class = env->FindClass("kkk/hookobject/MainActivity");
+    // if(_class == NULL)
+    // {
+    //     LOGI("kkk can't find class");
+    //     return;
+    // }
+    // jmethodID method = env->GetMethodID(_class, "viewlog", "()V");
+    // if(method == NULL)
+    // {
+    //     LOGI("kkk can't find method");
+    //     return;
+    // }
+  
+    // /*2.进行hook*/
+    // MSJavaHookMethod(env, _class, method, (void *)&newCode, (void **)&oldCode);
+
+    return;
+}
+//构造参数
+static const char* gClassName = "kkk/hookobject/MainActivity"; // com/mzz/mzz/Dejavu
+static JNINativeMethod gMethods[] = {
+        {"callnative", "()V", (void *)setSpeedLevel},
+};
+
+//函数注册
+static int registerNativeMethods(JNIEnv* env, const char* className,
+                                JNINativeMethod *gMethods, int numMethods) {
+    jclass clazz;
+    clazz = env->FindClass(className);
+    if(clazz == NULL) {
+        return JNI_FALSE;
+    }
+    if(env->RegisterNatives(clazz, gMethods, numMethods) < 0) {
+        return JNI_FALSE;
+    }
+    return JNI_TRUE;
+}
+//Jni_onload调用
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void* reserved) {
+    JNIEnv* env = NULL;
+    jint result = -1;
+    if(vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
+        return -1;
+    }
+    if (registerNativeMethods(env, gClassName, gMethods,sizeof(gMethods) / sizeof(gMethods[0])) == JNI_FALSE)
+             {
+        return -1;
+    }
+
+    /*执行java hook, 注意 java hook必须在jni_load 之后执行，太早找不到类*/
+    doJavaHook(env);
+    
+
+    return JNI_VERSION_1_6;
 }

@@ -22,8 +22,19 @@ LOCAL_SRC_FILES := $(LOCAL_PATH)/libhookzz.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
+LOCAL_MODULE := substrate
+LOCAL_SRC_FILES := $(LOCAL_PATH)/libsubstrate.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := substrate-dvm
+LOCAL_SRC_FILES := $(LOCAL_PATH)/libsubstrate-dvm.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
 LOCAL_MODULE    := myhook
 LOCAL_LDLIBS	:= -llog
+LOCAL_LDLIBS += -L$(LOCAL_PATH) -lsubstrate-dvm -lsubstrate
 LOCAL_SRC_FILES := myHook.cpp hook.cpp
 LOCAL_STATIC_LIBRARIES := libhookzz
 

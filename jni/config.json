@@ -1,7 +1,7 @@
 {
     "config" :[
     	{
-    		"packageName":"stefan.myhookdemo", 
+    		"packageName":"kkk.hookobject", 
     		"libName" : "libmyhook"
     	}
     ]
